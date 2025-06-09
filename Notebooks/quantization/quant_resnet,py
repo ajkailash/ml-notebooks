@@ -1,0 +1,33 @@
+import torch
+import torch.nn as nn
+import torch.ao.quantization
+from models.resnet import resnet18
+
+model = resnet18()
+
+model.eval()
+
+fusion_list = []
+for name, module in model.named_modules():
+    if isinstance(module, nn.Conv2d):
+        parent_name = ".".join(name.split(".")[:-1])
+        conv_name = name
+        bn_name = f"{parent_name}.bn1" if conv_name.endswith("conv1") else f"{parent_name}.bn2"
+
+        if name.endswith("conv1"):
+            fusion_list.append([conv_name, bn_name, f"{parent_name}.relu"])
+        else:
+            fusion_list.append([conv_name, bn_name])
+    
+
+
+
+#Step 1
+# Architecuture changes
+# Placing quant and dequant stubs and float functionals(we will revisit this later)
+
+
+#Step 2
+#Fusing modules
+torch.ao.quantization.fuse_modules(model, fusion_list)
+
